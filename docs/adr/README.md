@@ -12,3 +12,4 @@ Evidence comes from the Windows proof of concept (`poc/`, kept locally, not vers
 | [0005](0005-service-library.md) | Windows service library | Accepted |
 | [0006](0006-log-capture.md) | Non-blocking stdout / stderr capture | Accepted |
 | [0007](0007-windows-legacy-build.md) | Windows Server 2012 R2 legacy build | Proposed (untested) |
+| [0008](0008-config-format.md) | Configuration format, version 1 | Accepted |
