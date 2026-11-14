@@ -23,6 +23,8 @@ type rawConfig struct {
 
 	// pos maps a field path ("services.api.restart") to the position of its key.
 	pos map[string]Pos
+	// dotenv holds the variables of the global .env files, merged in order.
+	dotenv map[string]string
 }
 
 // rawPolicy holds the fields allowed both in "defaults" and in a service.
@@ -55,6 +57,9 @@ type rawService struct {
 	Replicas  *int
 	Autostart *bool
 	WaitFor   *rawWaitFor
+
+	// dotenv holds the variables of the service .env files, merged in order.
+	dotenv map[string]string
 }
 
 // serviceOnlyFields cannot appear in "defaults".

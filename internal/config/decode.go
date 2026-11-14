@@ -24,6 +24,11 @@ type decoder struct {
 	errs    ErrorList
 	anchors map[string]ast.Node
 	pos     map[string]Pos
+
+	// expand interpolates string scalars; nil disables interpolation.
+	expand lookupFunc
+	// skipEnvFile ignores the root env_file, already read by a first pass.
+	skipEnvFile bool
 }
 
 // fieldSet maps a mapping key to the function that decodes its value.
@@ -36,15 +41,28 @@ type entry struct {
 	val    ast.Node
 }
 
-// parse decodes a config file into its raw form. Errors are not sorted.
-func parse(file string, data []byte) (*rawConfig, ErrorList) {
-	d := &decoder{file: file, anchors: map[string]ast.Node{}, pos: map[string]Pos{}}
-	cfg := &rawConfig{pos: d.pos}
+func newDecoder(file string) *decoder {
+	return &decoder{file: file, anchors: map[string]ast.Node{}, pos: map[string]Pos{}}
+}
 
+// parse decodes a config file into its raw form, without interpolation.
+// Errors are not sorted.
+func parse(file string, data []byte) (*rawConfig, ErrorList) {
+	d := newDecoder(file)
+	cfg := &rawConfig{pos: d.pos}
+	if body := d.document(data); body != nil {
+		d.root(body, cfg)
+	}
+	return cfg, d.errs
+}
+
+// document parses data and returns the body of its single YAML document,
+// or nil after recording an error.
+func (d *decoder) document(data []byte) ast.Node {
 	f, err := parser.ParseBytes(data, 0)
 	if err != nil {
 		d.syntaxError(err)
-		return cfg, d.errs
+		return nil
 	}
 	var body ast.Node
 	for _, doc := range f.Docs {
@@ -53,17 +71,32 @@ func parse(file string, data []byte) (*rawConfig, ErrorList) {
 		}
 		if body != nil {
 			d.errs.add(d.nodePos(doc.Body), "", "multiple YAML documents are not supported")
-			break
+			return nil
 		}
 		body = doc.Body
 	}
 	if body == nil {
-		d.errs.add(Pos{File: file}, "", "empty configuration (at least one service is required)")
-		return cfg, d.errs
+		d.errs.add(Pos{File: d.file}, "", "empty configuration (at least one service is required)")
+		return nil
 	}
 	d.collectAnchors(body, 0)
-	d.root(body, cfg)
-	return cfg, d.errs
+	return body
+}
+
+// rootEnvFile decodes only the root env_file field. Other fields, and
+// structural errors, are left to root.
+func (d *decoder) rootEnvFile(n ast.Node) []string {
+	r, ok := n.(*ast.MappingNode)
+	if !ok {
+		return nil
+	}
+	for _, mv := range r.Values {
+		if k, ok := mv.Key.(ast.ScalarNode); ok && !isNull(mv.Key) && scalarText(k) == "env_file" {
+			d.pos["env_file"] = d.nodePos(mv.Key)
+			return d.strList(mv.Value, "env_file")
+		}
+	}
+	return nil
 }
 
 func (d *decoder) syntaxError(err error) {
@@ -108,8 +141,12 @@ func (d *decoder) root(n ast.Node, cfg *rawConfig) {
 			}
 			d.fields(n, p, fs)
 		},
-		"env_file": func(n ast.Node, p string) { cfg.EnvFile = d.strList(n, p) },
-		"alerts":   func(n ast.Node, p string) { cfg.Alerts = d.alerts(n, p) },
+		"env_file": func(n ast.Node, p string) {
+			if !d.skipEnvFile {
+				cfg.EnvFile = d.strList(n, p)
+			}
+		},
+		"alerts": func(n ast.Node, p string) { cfg.Alerts = d.alerts(n, p) },
 		"services": func(n ast.Node, p string) {
 			es, ok := d.entries(n, p)
 			if !ok {
@@ -482,7 +519,25 @@ func (d *decoder) scalar(n ast.Node, path string) (string, bool) {
 		d.errs.add(d.nodePos(orig), path, "expected a single value, got %s", describe(n))
 		return "", false
 	}
-	return scalarText(s), true
+	text := scalarText(s)
+	if d.expand != nil && isString(s) {
+		v, err := interpolate(text, d.expand)
+		if err != nil {
+			d.errs.add(d.nodePos(orig), path, "%v", err)
+			return "", false
+		}
+		text = v
+	}
+	return text, true
+}
+
+// isString reports whether n is a string scalar, the only kind interpolated.
+func isString(n ast.Node) bool {
+	switch n.(type) {
+	case *ast.StringNode, *ast.LiteralNode:
+		return true
+	}
+	return false
 }
 
 func scalarText(n ast.ScalarNode) string {
@@ -605,6 +660,7 @@ func (d *decoder) strList(n ast.Node, path string) []string {
 	}
 	out := []string{}
 	d.seq(n, path, func(n ast.Node, p string) {
+		d.pos[p] = d.nodePos(n)
 		if s, ok := d.scalar(n, p); ok {
 			out = append(out, s)
 		}
