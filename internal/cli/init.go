@@ -51,10 +51,12 @@ func newInitCmd() *cobra.Command {
 				if err := os.WriteFile(p, f.data, 0o644); err != nil {
 					return err
 				}
-				fmt.Fprintln(cmd.OutOrStdout(), "created", p)
+				if _, err := fmt.Fprintln(cmd.OutOrStdout(), "created", p); err != nil {
+					return err
+				}
 			}
-			fmt.Fprintln(cmd.OutOrStdout(), "next: edit dstate.yaml, then run: dstate validate", filepath.Join(dir, "dstate.yaml"))
-			return nil
+			_, err := fmt.Fprintln(cmd.OutOrStdout(), "next: edit dstate.yaml, then run: dstate validate", filepath.Join(dir, "dstate.yaml"))
+			return err
 		},
 	}
 	cmd.Flags().StringVarP(&dir, "dir", "d", ".", "directory to create the files in")

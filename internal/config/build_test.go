@@ -94,9 +94,9 @@ func TestLoadFullExampleEffective(t *testing.T) {
 		t.Fatal(err)
 	}
 	cfg, err := loadConfig(t, "windows", nil, map[string]string{
-		"cfg/dstate.yaml":  string(data),
-		"cfg/.env":         fullExampleEnv,
-		`D:\apps\api\.env`: "DB=x\nAPP_ENV=dev\n",
+		"cfg/dstate.yaml": string(data),
+		"cfg/.env":        fullExampleEnv,
+		apiEnvFile():      "DB=x\nAPP_ENV=dev\n",
 	})
 	if err != nil {
 		t.Fatal(err)

@@ -143,7 +143,7 @@ func TestFullExampleOnEachOS(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	files := map[string]string{"cfg/dstate.yaml": string(data), "cfg/.env": fullExampleEnv, `D:\apps\api\.env`: ""}
+	files := map[string]string{"cfg/dstate.yaml": string(data), "cfg/.env": fullExampleEnv, apiEnvFile(): ""}
 
 	if _, err := Load(cfgPath, Options{Env: []string{}, GOOS: "windows", ReadFile: memFiles(files)}); err != nil {
 		t.Errorf("windows: %v", err)

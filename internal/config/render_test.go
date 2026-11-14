@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -40,13 +41,17 @@ func portable(t *testing.T, s string) string {
 	return strings.ReplaceAll(s, "\\", "/")
 }
 
+// quotedDirRe matches a YAML path quoted only because of the host format
+// (Windows paths contain ":" and "\").
+var quotedDirRe = regexp.MustCompile(`"(<dir>[^"]*)"`)
+
 func TestRenderGolden(t *testing.T) {
 	cfg := loadShow(t)
 	y, err := cfg.YAML(false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	checkGolden(t, "testdata/render/show.yaml.golden", portable(t, string(y)))
+	checkGolden(t, "testdata/render/show.yaml.golden", quotedDirRe.ReplaceAllString(portable(t, string(y)), "$1"))
 
 	j, err := cfg.JSON(false)
 	if err != nil {

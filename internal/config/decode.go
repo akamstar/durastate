@@ -785,13 +785,13 @@ func isNull(n ast.Node) bool {
 }
 
 func describe(n ast.Node) string {
-	switch n.(type) {
+	switch v := n.(type) {
 	case *ast.MappingNode, *ast.MappingValueNode:
 		return "a mapping"
 	case *ast.SequenceNode:
 		return "a list"
 	case ast.ScalarNode:
-		return fmt.Sprintf("%q", scalarText(n.(ast.ScalarNode)))
+		return fmt.Sprintf("%q", scalarText(v))
 	default:
 		return n.Type().String()
 	}

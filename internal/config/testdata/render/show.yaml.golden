@@ -1,6 +1,6 @@
 version: 1
 env_file:
-  - "<dir>/.env"
+  - <dir>/.env
 alerts:
   channels:
     tg:
@@ -33,7 +33,7 @@ services:
       - --level
       - info
     shell: false
-    cwd: "<dir>/apps/api"
+    cwd: <dir>/apps/api
     env:
       API_KEY: "***"
       APP_ENV: production
@@ -43,7 +43,7 @@ services:
       SMTP_HOST: "***"
       URL: postgres://app:***@db/app
     env_file:
-      - "<dir>/api.env"
+      - <dir>/api.env
     inherit_env: true
     replicas: 1
     autostart: true
@@ -83,7 +83,7 @@ services:
       - php
       - worker.php
     shell: false
-    cwd: "<dir>"
+    cwd: <dir>
     env:
       CHAT_ID: "***"
       NTFY_TOKEN: "***"

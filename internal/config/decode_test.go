@@ -29,8 +29,6 @@ func parseErrors(src string) string {
 	return ""
 }
 
-func ptr[T any](v T) *T { return &v }
-
 func TestParseMinimal(t *testing.T) {
 	data, err := os.ReadFile("testdata/minimal.yaml")
 	if err != nil {
@@ -408,6 +406,6 @@ func FuzzParse(f *testing.F) {
 	f.Add([]byte("a: &x [*x]\n"))
 	f.Add([]byte("services:\n  a:\n    <<: *a\n"))
 	f.Fuzz(func(t *testing.T, data []byte) {
-		parse("fuzz.yaml", data) // must not panic
+		_, _ = parse("fuzz.yaml", data) // must not panic
 	})
 }

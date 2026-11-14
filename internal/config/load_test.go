@@ -225,15 +225,21 @@ func TestLoadWindowsCaseInsensitiveLookup(t *testing.T) {
 	}
 }
 
+// apiEnvFile is where the host resolves the env_file `D:\apps\api\.env` of
+// testdata/full.yaml: as is on Windows, relative to cfg/ elsewhere.
+func apiEnvFile() string {
+	return resolvePath(filepath.Dir(cfgPath), `D:\apps\api\.env`)
+}
+
 func TestLoadFullExample(t *testing.T) {
 	data, err := os.ReadFile("testdata/full.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
 	cfg := mustLoad(t, nil, map[string]string{
-		"cfg/dstate.yaml":  string(data),
-		"cfg/.env":         fullExampleEnv,
-		`D:\apps\api\.env`: "DB=x\n",
+		"cfg/dstate.yaml": string(data),
+		"cfg/.env":        fullExampleEnv,
+		apiEnvFile():      "DB=x\n",
 	})
 	if got := cfg.Alerts.Channels[3].Headers["Authorization"]; got != "Bearer n" {
 		t.Errorf("Authorization = %q", got)

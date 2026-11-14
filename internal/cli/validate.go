@@ -79,13 +79,13 @@ func writeValidateJSON(w io.Writer, path string, cfg *config.Config, loadErr err
 
 // reportConfigError prints every config problem and returns a silent exit error.
 func reportConfigError(w io.Writer, err error) error {
-	fmt.Fprintln(w, err)
 	n := 1
 	var list config.ErrorList
 	if errors.As(err, &list) {
 		n = len(list)
 	}
-	fmt.Fprintf(w, "invalid configuration: %s\n", plural(n, "error"))
+	// Write errors to stderr are ignored: the exit code still reports the failure.
+	_, _ = fmt.Fprintf(w, "%v\ninvalid configuration: %s\n", err, plural(n, "error"))
 	return &exitError{code: ExitInvalidConfig, err: err, silent: true}
 }
 
