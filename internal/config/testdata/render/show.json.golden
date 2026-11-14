@@ -1,0 +1,157 @@
+{
+  "version": 1,
+  "env_file": [
+    "<dir>/.env"
+  ],
+  "alerts": {
+    "channels": {
+      "tg": {
+        "type": "telegram",
+        "bot_token": "***",
+        "chat_id": "***"
+      },
+      "hook": {
+        "type": "webhook",
+        "url": "https://ntfy.sh/***",
+        "method": "POST",
+        "headers": {
+          "Authorization": "***",
+          "X-Title": "dstate"
+        }
+      }
+    },
+    "rules": [
+      {
+        "events": [
+          "crashed"
+        ],
+        "channels": [
+          "tg",
+          "hook"
+        ]
+      }
+    ],
+    "throttle": {
+      "min_interval": "5m",
+      "group_window": "30s"
+    }
+  },
+  "services": {
+    "api": {
+      "command": [
+        "python",
+        "app.py",
+        "--db-password",
+        "***",
+        "--level",
+        "info"
+      ],
+      "shell": false,
+      "cwd": "<dir>/apps/api",
+      "env": {
+        "API_KEY": "***",
+        "APP_ENV": "production",
+        "CHAT_ID": "***",
+        "NTFY_TOKEN": "***",
+        "NTFY_TOPIC": "***",
+        "SMTP_HOST": "***",
+        "URL": "postgres://app:***@db/app"
+      },
+      "env_file": [
+        "<dir>/api.env"
+      ],
+      "inherit_env": true,
+      "replicas": 1,
+      "autostart": true,
+      "restart": "always",
+      "success_exit_codes": [
+        0
+      ],
+      "backoff": {
+        "initial": "1s",
+        "max": "5m",
+        "multiplier": 2
+      },
+      "max_restarts": 10,
+      "restart_window": "10m",
+      "stable_after": "1m",
+      "crash_loop_retry": {
+        "enabled": true,
+        "initial": "5m",
+        "max": "1h"
+      },
+      "start_delay": "0s",
+      "wait_for": {
+        "targets": [
+          "tcp://localhost:5432"
+        ],
+        "timeout": "5m",
+        "interval": "2s"
+      },
+      "stop_signal": "ctrl_break",
+      "stop_timeout": "30s",
+      "logs": {
+        "max_size": "50MB",
+        "max_files": 10,
+        "max_age": "14d",
+        "compress": true,
+        "timestamps": true,
+        "merge_stderr": false
+      },
+      "alerts": {
+        "enabled": true
+      }
+    },
+    "worker": {
+      "command": [
+        "php",
+        "worker.php"
+      ],
+      "shell": false,
+      "cwd": "<dir>",
+      "env": {
+        "CHAT_ID": "***",
+        "NTFY_TOKEN": "***",
+        "NTFY_TOPIC": "***"
+      },
+      "inherit_env": true,
+      "replicas": 2,
+      "autostart": true,
+      "restart": "always",
+      "success_exit_codes": [
+        0
+      ],
+      "backoff": {
+        "initial": "1s",
+        "max": "5m",
+        "multiplier": 2
+      },
+      "max_restarts": 10,
+      "restart_window": "10m",
+      "stable_after": "1m",
+      "crash_loop_retry": {
+        "enabled": true,
+        "initial": "5m",
+        "max": "1h"
+      },
+      "start_delay": "0s",
+      "stop_signal": "ctrl_break",
+      "stop_command": [
+        "php",
+        "stop.php"
+      ],
+      "stop_timeout": "30s",
+      "logs": {
+        "max_size": "50MB",
+        "max_files": 10,
+        "max_age": "14d",
+        "compress": true,
+        "timestamps": true,
+        "merge_stderr": false
+      },
+      "alerts": {
+        "enabled": false
+      }
+    }
+  }
+}

@@ -1,0 +1,31 @@
+env_file: .env
+alerts:
+  channels:
+    tg:
+      type: telegram
+      bot_token: literal-token-in-yaml
+      chat_id: ${CHAT_ID}
+    hook:
+      type: webhook
+      url: https://ntfy.sh/${NTFY_TOPIC}
+      headers:
+        Authorization: Bearer ${NTFY_TOKEN}
+        X-Title: dstate
+  rules:
+    - {events: [crashed], channels: [tg, hook]}
+services:
+  api:
+    command: python app.py --db-password ${DB_PASSWORD} --level ${LEVEL}
+    cwd: apps/api
+    env_file: api.env
+    env:
+      APP_ENV: production
+      API_KEY: inline-key
+      URL: postgres://app:${DB_PASSWORD}@db/app
+    wait_for:
+      targets: [tcp://localhost:5432]
+  worker:
+    command: [php, worker.php]
+    replicas: 2
+    stop_command: php stop.php
+    alerts: {enabled: false}

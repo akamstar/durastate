@@ -44,9 +44,12 @@ func build(path string, raw *rawConfig, opt Options) (*Config, ErrorList) {
 		cfg.Version = *raw.Version
 	}
 	builtin := builtinPolicy(opt.GOOS)
+	dotenvs := []map[string]string{raw.dotenv}
 	for _, rs := range raw.Services {
 		cfg.Services = append(cfg.Services, b.service(rs, mergePolicy(mergePolicy(&rs.rawPolicy, raw.Defaults), builtin)))
+		dotenvs = append(dotenvs, rs.dotenv)
 	}
+	cfg.secrets = newSecrets(raw.secrets, dotenvs...)
 	return cfg, b.errs
 }
 
@@ -56,7 +59,10 @@ func (b *builder) service(rs *rawService, pl *rawPolicy) *Service {
 	env := newEnvMap(b.opt.GOOS)
 	env.merge(b.raw.dotenv)
 	env.merge(rs.dotenv)
+	fromDotenv := env.toMap()
 	env.merge(rs.Env)
+	block := newEnvMap(b.opt.GOOS)
+	block.merge(rs.Env)
 
 	s := &Service{
 		Name:       rs.Name,
@@ -98,6 +104,16 @@ func (b *builder) service(rs *rawService, pl *rawPolicy) *Service {
 			MergeStderr: *pl.Logs.MergeStderr,
 		},
 		Alerts: ServiceAlerts{Enabled: *pl.Alerts.Enabled, Rules: rules(pl.Alerts.Rules)},
+	}
+	for k := range s.Env {
+		_, inBlock := block.lookup(k)
+		_, inDotenv := fromDotenv[k]
+		if isSecretName(k) || (inDotenv && !inBlock) {
+			if s.secretEnv == nil {
+				s.secretEnv = map[string]bool{}
+			}
+			s.secretEnv[k] = true
+		}
 	}
 	for k, v := range rs.Env {
 		if strings.Contains(v, "{{") {

@@ -12,6 +12,8 @@ type Config struct {
 	EnvFiles []string // resolved paths of the global .env files
 	Alerts   Alerts
 	Services []*Service // in file order
+
+	secrets *secrets
 }
 
 // Service returns the service with the given name, or nil.
@@ -83,37 +85,40 @@ type Service struct {
 
 	// templatedEnv lists the env block keys whose value is a template.
 	templatedEnv map[string]bool
+	// secretEnv lists the keys whose value is hidden as a whole: values
+	// from a .env file, or keys named like a secret.
+	secretEnv map[string]bool
 }
 
 // Backoff is the delay between restarts after a crash.
 type Backoff struct {
-	Initial    Duration
-	Max        Duration
-	Multiplier float64
+	Initial    Duration `yaml:"initial" json:"initial"`
+	Max        Duration `yaml:"max" json:"max"`
+	Multiplier float64  `yaml:"multiplier" json:"multiplier"`
 }
 
 // CrashLoopRetry controls slow retries once a service is in crash loop.
 type CrashLoopRetry struct {
-	Enabled bool
-	Initial Duration
-	Max     Duration
+	Enabled bool     `yaml:"enabled" json:"enabled"`
+	Initial Duration `yaml:"initial" json:"initial"`
+	Max     Duration `yaml:"max" json:"max"`
 }
 
 // WaitFor lists conditions to meet before starting a service.
 type WaitFor struct {
-	Targets  []string // tcp://host:port, http(s)://url, winsvc://Name
-	Timeout  Duration
-	Interval Duration
+	Targets  []string `yaml:"targets" json:"targets"` // tcp://host:port, http(s)://url, winsvc://Name
+	Timeout  Duration `yaml:"timeout" json:"timeout"`
+	Interval Duration `yaml:"interval" json:"interval"`
 }
 
 // Logs controls the capture and rotation of a service output.
 type Logs struct {
-	MaxSize     Size
-	MaxFiles    int
-	MaxAge      Duration
-	Compress    bool
-	Timestamps  bool
-	MergeStderr bool
+	MaxSize     Size     `yaml:"max_size" json:"max_size"`
+	MaxFiles    int      `yaml:"max_files" json:"max_files"`
+	MaxAge      Duration `yaml:"max_age" json:"max_age"`
+	Compress    bool     `yaml:"compress" json:"compress"`
+	Timestamps  bool     `yaml:"timestamps" json:"timestamps"`
+	MergeStderr bool     `yaml:"merge_stderr" json:"merge_stderr"`
 }
 
 // ServiceAlerts overrides the global alert rules for one service.
@@ -146,12 +151,12 @@ type Channel struct {
 
 // Rule sends the listed events to the listed channels.
 type Rule struct {
-	Events   []string
-	Channels []string
+	Events   []string `yaml:"events" json:"events"`
+	Channels []string `yaml:"channels" json:"channels"`
 }
 
 // Throttle limits the alert rate.
 type Throttle struct {
-	MinInterval Duration
-	GroupWindow Duration
+	MinInterval Duration `yaml:"min_interval" json:"min_interval"`
+	GroupWindow Duration `yaml:"group_window" json:"group_window"`
 }

@@ -42,7 +42,7 @@ func (o Options) withDefaults() Options {
 func loadRaw(path string, opt Options) (*rawConfig, ErrorList) {
 	opt = opt.withDefaults()
 	d := newDecoder(path)
-	cfg := &rawConfig{pos: d.pos}
+	cfg := &rawConfig{pos: d.pos, secrets: d.secrets}
 
 	data, err := opt.ReadFile(path)
 	if err != nil {
@@ -57,9 +57,15 @@ func loadRaw(path string, opt Options) (*rawConfig, ErrorList) {
 	base := filepath.Dir(path)
 	daemonEnv := envFromList(opt.GOOS, opt.Env)
 
+	globalEnv := newEnvMap(opt.GOOS)
+	// Values from a .env file, or from a variable named like a secret, are secret.
+	d.secretVar = func(name string) bool {
+		_, fromDotenv := globalEnv.lookup(name)
+		return fromDotenv || isSecretName(name)
+	}
+
 	d.expand = daemonEnv.lookup
 	cfg.EnvFile = d.rootEnvFile(body)
-	globalEnv := newEnvMap(opt.GOOS)
 	globalEnv.merge(loadDotenvFiles(d, opt, base, "env_file", cfg.EnvFile))
 	cfg.dotenv = globalEnv.toMap()
 

@@ -25,6 +25,8 @@ type rawConfig struct {
 	pos map[string]Pos
 	// dotenv holds the variables of the global .env files, merged in order.
 	dotenv map[string]string
+	// secrets maps a field path to the secret values interpolated into it.
+	secrets map[string][]string
 }
 
 // rawPolicy holds the fields allowed both in "defaults" and in a service.

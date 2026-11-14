@@ -29,6 +29,10 @@ type decoder struct {
 	expand lookupFunc
 	// skipEnvFile ignores the root env_file, already read by a first pass.
 	skipEnvFile bool
+	// secretVar reports whether an interpolated variable holds a secret;
+	// such values are recorded in secrets, by field path.
+	secretVar func(name string) bool
+	secrets   map[string][]string
 }
 
 // fieldSet maps a mapping key to the function that decodes its value.
@@ -42,7 +46,7 @@ type entry struct {
 }
 
 func newDecoder(file string) *decoder {
-	return &decoder{file: file, anchors: map[string]ast.Node{}, pos: map[string]Pos{}}
+	return &decoder{file: file, anchors: map[string]ast.Node{}, pos: map[string]Pos{}, secrets: map[string][]string{}}
 }
 
 // parse decodes a config file into its raw form, without interpolation.
@@ -524,7 +528,14 @@ func (d *decoder) scalar(n ast.Node, path string) (string, bool) {
 	}
 	text := scalarText(s)
 	if d.expand != nil && isString(s) {
-		v, err := interpolate(text, d.expand)
+		lookup := func(name string) (string, bool) {
+			v, ok := d.expand(name)
+			if ok && v != "" && d.secretVar != nil && d.secretVar(name) {
+				d.secrets[path] = append(d.secrets[path], v)
+			}
+			return v, ok
+		}
+		v, err := interpolate(text, lookup)
 		if err != nil {
 			d.errs.add(d.nodePos(orig), path, "%v", err)
 			return "", false
