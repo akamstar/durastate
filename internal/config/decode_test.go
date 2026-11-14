@@ -360,21 +360,26 @@ func TestParseGolden(t *testing.T) {
 			if err := errs.Err(); err != nil {
 				got = err.Error() + "\n"
 			}
-			golden := strings.TrimSuffix(f, ".yaml") + ".golden"
-			if *update {
-				if err := os.WriteFile(golden, []byte(got), 0o644); err != nil {
-					t.Fatal(err)
-				}
-				return
-			}
-			want, err := os.ReadFile(golden)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if got != strings.ReplaceAll(string(want), "\r\n", "\n") {
-				t.Errorf("got:\n%s\nwant:\n%s", got, want)
-			}
+			checkGolden(t, strings.TrimSuffix(f, ".yaml")+".golden", got)
 		})
+	}
+}
+
+// checkGolden compares got with a golden file, or rewrites it with -update.
+func checkGolden(t *testing.T, golden, got string) {
+	t.Helper()
+	if *update {
+		if err := os.WriteFile(golden, []byte(got), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return
+	}
+	want, err := os.ReadFile(golden)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != strings.ReplaceAll(string(want), "\r\n", "\n") {
+		t.Errorf("got:\n%s\nwant:\n%s", got, want)
 	}
 }
 

@@ -1,7 +1,7 @@
 many-errors.yaml:3:12: defaults.restart: invalid value "sometimes" (expected always, on-failure, never)
 many-errors.yaml:4:3: defaults.replicas: "replicas" is not allowed in defaults, set it on each service
 many-errors.yaml:9:7: alerts.channels.tg: unknown field "webhook_url" for a telegram channel
-many-errors.yaml:11:7: alerts.rules[0].events[1]: unknown event "exploded" (expected crashed, crash_loop, recovered, start_failed, config_rejected, wait_timeout, daemon_started, daemon_stopped)
+many-errors.yaml:11:25: alerts.rules[0].events[1]: unknown event "exploded" (expected crashed, crash_loop, recovered, start_failed, config_rejected, wait_timeout, daemon_started, daemon_stopped)
 many-errors.yaml:16:15: services.api.replicas: expected an integer, got "many"
 many-errors.yaml:17:19: services.api.stop_timeout: invalid duration "30" (examples: 30s, 5m, 1h30m, 14d)
 many-errors.yaml:18:16: services.api.autostart: expected true or false, got "yes"

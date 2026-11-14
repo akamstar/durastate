@@ -14,6 +14,9 @@ func Load(path string, opt Options) (*Config, error) {
 		return nil, errs.Err()
 	}
 	cfg, errs := build(path, raw, opt)
+	if len(errs) == 0 {
+		errs = validate(cfg, raw, opt.GOOS)
+	}
 	if len(errs) > 0 {
 		return nil, errs.Err()
 	}
@@ -96,6 +99,14 @@ func (b *builder) service(rs *rawService, pl *rawPolicy) *Service {
 		},
 		Alerts: ServiceAlerts{Enabled: *pl.Alerts.Enabled, Rules: rules(pl.Alerts.Rules)},
 	}
+	for k, v := range rs.Env {
+		if strings.Contains(v, "{{") {
+			if s.templatedEnv == nil {
+				s.templatedEnv = map[string]bool{}
+			}
+			s.templatedEnv[k] = true
+		}
+	}
 	s.Command = b.command(rs.Command, s.Shell, path+".command")
 	s.StopCommand = b.command(pl.StopCommand, s.Shell, path+".stop_command")
 	if rs.Cwd != nil {
@@ -161,8 +172,11 @@ func (b *builder) alerts(ra *rawAlerts) Alerts {
 			Headers:    rc.Headers,
 			Body:       deref(rc.Body),
 		}
-		if c.Type == "webhook" && c.Method == "" {
-			c.Method = defaultWebhookMethod
+		if c.Type == "webhook" {
+			c.Method = strings.ToUpper(c.Method)
+			if c.Method == "" {
+				c.Method = defaultWebhookMethod
+			}
 		}
 		a.Channels = append(a.Channels, c)
 	}

@@ -80,6 +80,9 @@ type Service struct {
 
 	Logs   Logs
 	Alerts ServiceAlerts
+
+	// templatedEnv lists the env block keys whose value is a template.
+	templatedEnv map[string]bool
 }
 
 // Backoff is the delay between restarts after a crash.

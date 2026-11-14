@@ -1,0 +1,12 @@
+many-errors.yaml:2:3: defaults.stop_signal: "sigterm" is not supported on windows (expected ctrl_break, kill, none)
+many-errors.yaml:4:5: defaults.logs.max_age: must be 0 (no limit) or at least 1d (got 6h)
+many-errors.yaml:8:5: alerts.channels.ops: missing required field "bot_token"
+many-errors.yaml:12:5: alerts.channels.Hook: invalid name "Hook" (use lowercase letters, digits, - and _, starting with a letter or digit, 63 characters max)
+many-errors.yaml:14:7: alerts.channels.Hook.url: invalid URL "not-a-url" (expected http:// or https://)
+many-errors.yaml:17:23: alerts.rules[0].channels[1]: unknown channel "pager" (defined: Hook, ops)
+many-errors.yaml:22:5: services.api.replicas: must be at least 1 (got 0), use autostart: false to define a service without starting it
+many-errors.yaml:23:3: services.con: "con" is a reserved device name on Windows
+many-errors.yaml:25:5: services.con.backoff: max (1m) must not be lower than initial (10m)
+many-errors.yaml:29:17: services.con.wait_for.targets[0]: invalid target "tcp://db" (expected tcp://host:port)
+many-errors.yaml:30:3: services.worker: missing required field "command"
+many-errors.yaml:33:7: services.worker.env.DSTATE_SERVICE: the DSTATE_ prefix is reserved for variables set by dstate

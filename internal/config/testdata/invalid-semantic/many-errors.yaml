@@ -1,0 +1,33 @@
+defaults:
+  stop_signal: sigterm
+  logs:
+    max_age: 6h
+
+alerts:
+  channels:
+    ops:
+      type: telegram
+      bot_token: ""
+      chat_id: "42"
+    Hook:
+      type: webhook
+      url: not-a-url
+  rules:
+    - events: [crashed]
+      channels: [ops, pager]
+
+services:
+  api:
+    command: serve --port {{add 8000 .Instance}}
+    replicas: 0
+  con:
+    command: run
+    backoff:
+      initial: 10m
+      max: 1m
+    wait_for:
+      targets: [tcp://db, "winsvc://MySQL80"]
+  worker:
+    cwd: /srv/worker
+    env:
+      DSTATE_SERVICE: override

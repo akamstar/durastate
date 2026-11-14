@@ -10,6 +10,14 @@ import (
 	"time"
 )
 
+// fullExampleEnv is the .env file of testdata/full.yaml.
+const fullExampleEnv = `TELEGRAM_BOT_TOKEN=t
+TELEGRAM_CHAT_ID=42
+SLACK_WEBHOOK_URL=https://hooks.slack.com/x
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/x
+NTFY_TOKEN=n
+`
+
 func loadConfig(t *testing.T, goos string, env []string, files map[string]string) (*Config, error) {
 	t.Helper()
 	return Load(cfgPath, Options{Env: env, ReadFile: memFiles(files), GOOS: goos})
@@ -87,7 +95,7 @@ func TestLoadFullExampleEffective(t *testing.T) {
 	}
 	cfg, err := loadConfig(t, "windows", nil, map[string]string{
 		"cfg/dstate.yaml":  string(data),
-		"cfg/.env":         "TELEGRAM_BOT_TOKEN=t\nTELEGRAM_CHAT_ID=42\nSLACK_WEBHOOK_URL=s\nDISCORD_WEBHOOK_URL=d\nNTFY_TOKEN=n\n",
+		"cfg/.env":         fullExampleEnv,
 		`D:\apps\api\.env`: "DB=x\nAPP_ENV=dev\n",
 	})
 	if err != nil {
@@ -127,6 +135,9 @@ func TestLoadFullExampleEffective(t *testing.T) {
 
 func TestLoadPrecedence(t *testing.T) {
 	cfg := mustLoadConfig(t, "linux", map[string]string{"cfg/dstate.yaml": `
+alerts:
+  channels:
+    x: {type: slack, webhook_url: "https://hooks.slack.com/x"}
 defaults:
   restart: on-failure
   logs: {max_files: 5, compress: false}

@@ -318,7 +318,8 @@ func (d *decoder) rules(n ast.Node, path string) []*rawRule {
 				r.Events = d.strList(n, p)
 				for i, ev := range r.Events {
 					if !slices.Contains(alertEvents, ev) {
-						d.errs.add(d.pos[p], fmt.Sprintf("%s[%d]", p, i), "unknown event %q (expected %s)", ev, strings.Join(alertEvents, ", "))
+						ep := fmt.Sprintf("%s[%d]", p, i)
+						d.errs.add(d.keyOrNodePos(ep, n), ep, "unknown event %q (expected %s)", ev, strings.Join(alertEvents, ", "))
 					}
 				}
 			},
@@ -445,7 +446,9 @@ func (d *decoder) seq(n ast.Node, path string, fn func(n ast.Node, path string))
 		return
 	}
 	for i, item := range s.Values {
-		fn(item, fmt.Sprintf("%s[%d]", path, i))
+		p := fmt.Sprintf("%s[%d]", path, i)
+		d.pos[p] = d.itemPos(item)
+		fn(item, p)
 	}
 }
 
@@ -660,7 +663,6 @@ func (d *decoder) strList(n ast.Node, path string) []string {
 	}
 	out := []string{}
 	d.seq(n, path, func(n ast.Node, p string) {
-		d.pos[p] = d.nodePos(n)
 		if s, ok := d.scalar(n, p); ok {
 			out = append(out, s)
 		}
@@ -741,6 +743,20 @@ func (d *decoder) nodePos(n ast.Node) Pos {
 	}
 	t := n.GetToken()
 	return Pos{File: d.file, Line: t.Position.Line, Col: t.Position.Column}
+}
+
+// itemPos is the position of a list item. A mapping token is its first ":",
+// so a mapping item points at its first key instead.
+func (d *decoder) itemPos(n ast.Node) Pos {
+	switch v := n.(type) {
+	case *ast.MappingNode:
+		if len(v.Values) > 0 {
+			return d.nodePos(v.Values[0].Key)
+		}
+	case *ast.MappingValueNode:
+		return d.nodePos(v.Key)
+	}
+	return d.nodePos(n)
 }
 
 // keyOrNodePos points at the key of path when known, as a missing value has

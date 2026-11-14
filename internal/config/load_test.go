@@ -232,7 +232,7 @@ func TestLoadFullExample(t *testing.T) {
 	}
 	cfg := mustLoad(t, nil, map[string]string{
 		"cfg/dstate.yaml":  string(data),
-		"cfg/.env":         "TELEGRAM_BOT_TOKEN=t\nTELEGRAM_CHAT_ID=42\nSLACK_WEBHOOK_URL=s\nDISCORD_WEBHOOK_URL=d\nNTFY_TOKEN=n\n",
+		"cfg/.env":         fullExampleEnv,
 		`D:\apps\api\.env`: "DB=x\n",
 	})
 	if got := cfg.Alerts.Channels[3].Headers["Authorization"]; got != "Bearer n" {
