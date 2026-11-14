@@ -17,8 +17,9 @@ var (
 
 func main() {
 	root := cli.NewRootCmd(cli.BuildInfo{Version: version, Commit: commit, Date: date})
-	if err := root.Execute(); err != nil {
+	err := root.Execute()
+	if err != nil && !cli.Silent(err) {
 		fmt.Fprintln(os.Stderr, "error:", err)
-		os.Exit(1)
 	}
+	os.Exit(cli.ExitCode(err))
 }

@@ -1,0 +1,53 @@
+# dstate configuration
+#
+# Check it:      dstate validate
+# Apply it:      dstate apply
+# Effective config, with every default: dstate config show
+#
+# Variables: ${VAR}, ${VAR:-default}, ${VAR:?error message}. Use $$ for a
+# literal "$". Values come from the dstate environment and the env_file below.
+version: 1
+
+# Global .env files, loaded in order (later files win). Keep them out of Git.
+# env_file:
+#   - .env
+
+# Defaults for every service. A service can override any of them.
+defaults:
+  restart: always          # always, on-failure or never
+  stop_timeout: 30s        # wait for a graceful stop before killing the process tree
+  logs:
+    max_size: 50MB
+    max_files: 10
+    max_age: 14d
+
+# Notifications. Secrets belong in .env, not here.
+# alerts:
+#   channels:
+#     ops:
+#       type: telegram     # telegram, slack, discord or webhook
+#       bot_token: ${TELEGRAM_BOT_TOKEN}
+#       chat_id: ${TELEGRAM_CHAT_ID}
+#   rules:
+#     - events: [crashed, crash_loop, recovered]
+#       channels: [ops]
+
+services:
+  # The name is used by commands: dstate status web, dstate logs web
+  web:
+    command: python app.py --port ${WEB_PORT:-8000}
+    # cwd: D:\apps\web          # default: the folder of this file
+    # env:
+    #   APP_ENV: production
+    # replicas: 2               # instances web:1 and web:2; {{.Instance}} is 1 or 2
+    # wait_for:
+    #   targets:
+    #     - tcp://localhost:5432
+
+  # A PHP worker, stopped gracefully on Windows with stop_command:
+  # worker:
+  #   command: php bin/console messenger:consume async --time-limit=3600
+  #   replicas: 2
+  #   stop_command: php bin/console messenger:stop-workers
+  #   stop_signal: none
+  #   stop_timeout: 60s
