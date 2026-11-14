@@ -1,0 +1,80 @@
+version: 1
+
+# Defaults applied to every service
+defaults:
+  restart: always
+  stop_timeout: 30s
+  logs:
+    max_size: 50MB
+    max_files: 10
+    max_age: 14d
+    compress: true
+
+# Global .env files (later files win)
+env_file:
+  - .env
+
+alerts:
+  channels:
+    ops-telegram:
+      type: telegram
+      bot_token: ${TELEGRAM_BOT_TOKEN}
+      chat_id: ${TELEGRAM_CHAT_ID}
+    ops-slack:
+      type: slack
+      webhook_url: ${SLACK_WEBHOOK_URL}
+    ops-discord:
+      type: discord
+      webhook_url: ${DISCORD_WEBHOOK_URL}
+    ntfy:
+      type: webhook
+      url: https://ntfy.sh/my-server
+      method: POST
+      headers:
+        Authorization: Bearer ${NTFY_TOKEN}
+      body: '{"title":"{{.Service}}","message":"{{.Message}}"}'
+  rules:
+    - events: [crashed, crash_loop, recovered]
+      channels: [ops-telegram, ops-slack]
+  throttle:
+    min_interval: 5m       # minimum delay between two alerts of the same type for a service
+    group_window: 30s      # events within this window are sent as one message
+
+services:
+  api:
+    command: python -m uvicorn main:app --port 8000
+    cwd: D:\apps\api
+    env:
+      APP_ENV: production
+    env_file: D:\apps\api\.env      # service .env (wins over the global one)
+
+  front:
+    command: node server.js
+    cwd: D:\apps\front
+    stop_signal: ctrl_break          # Node handles SIGBREAK on Windows
+
+  messenger:
+    command: php bin/console messenger:consume async --time-limit=3600 --memory-limit=128M
+    cwd: D:\apps\symfony
+    replicas: 3
+    restart: always
+    stop_command: php bin/console messenger:stop-workers   # graceful stop for PHP on Windows
+    stop_timeout: 60s                # let the current message finish
+    wait_for:
+      targets:
+        - tcp://localhost:3306       # MySQL
+        - tcp://localhost:6379       # Redis
+      timeout: 5m
+
+  queue:
+    command: php artisan queue:work --max-time=3600
+    cwd: D:\apps\laravel
+    replicas: 2
+    stop_command: php artisan queue:restart
+    wait_for:
+      targets: [winsvc://MySQL80]    # wait for a Windows service
+
+  reports:
+    command: scripts\build-report.bat
+    restart: on-failure
+    autostart: false                 # defined, started on demand only

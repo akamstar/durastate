@@ -1,0 +1,23 @@
+version: 1
+defaults:
+  restart: sometimes
+  replicas: 2
+alerts:
+  channels:
+    tg:
+      type: telegram
+      webhook_url: https://example.com
+  rules:
+    - events: [crashed, exploded]
+      channels: tg
+services:
+  api:
+    command: python app.py
+    replicas: many
+    stop_timeout: 30
+    autostart: yes
+    logs:
+      max_size: 10
+      max_file: 3
+  worker:
+    commnd: php worker.php
